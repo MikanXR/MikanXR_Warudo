@@ -2,6 +2,7 @@
   "en": {
     "MIKAN_XR": "MikanXR",
     "MIKAN_XR_DESCRIPTION": "Integration with MikanXR mixed reality compositor.",
-    "ON_MIKAN_CONNECTED_EVENT": "On MikanXR Connected Event"
+    "ON_MIKAN_CONNECTED_EVENT": "On MikanXR Connected Event",
+	"MIKAN_CLIENT": "Mikan Client"
   }
 }

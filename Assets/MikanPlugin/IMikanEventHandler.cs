@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Warudo.Plugins.MikanXR {
+namespace Warudo.Plugins.MikanPlugin {
     public interface IMikanEventHandler
     {
         public string EventType { get; }

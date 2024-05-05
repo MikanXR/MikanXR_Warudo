@@ -3,11 +3,11 @@ using Warudo.Core;
 using Warudo.Core.Attributes;
 using Warudo.Core.Graphs;
 using Warudo.Core.Localization;
-using Warudo.Plugins.MikanXR;
+using Warudo.Plugins.MikanPlugin;
 
-namespace Warudo.Plugins.MikanXR.Nodes
+namespace Warudo.Plugins.MikanPlugin.Nodes
 {
-	public abstract class MikanEventNode : Node, MikanXR.IMikanEventHandler
+	public abstract class MikanEventNode : Node, IMikanEventHandler
     {
 		protected MikanEventController EventController => 
 			Context.PluginManager.GetPlugin<MikanPlugin>().EventController;

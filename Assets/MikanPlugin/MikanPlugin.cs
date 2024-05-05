@@ -2,11 +2,11 @@
 using Warudo.Core.Attributes;
 using Warudo.Core.Plugins;
 using Warudo.Plugins.Core;
-using Warudo.Plugins.MikanXR.Nodes;
+using Warudo.Plugins.MikanPlugin.Nodes;
 using MikanXR;
 using Warudo.Core;
 
-namespace Warudo.Plugins.MikanXR {
+namespace Warudo.Plugins.MikanPlugin {
     [PluginType(
         Id = "Warudo.MikanXR",
         Name = "MIKAN_XR",

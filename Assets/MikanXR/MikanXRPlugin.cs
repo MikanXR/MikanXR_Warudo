@@ -2,8 +2,9 @@
 using Warudo.Core.Attributes;
 using Warudo.Core.Plugins;
 using Warudo.Plugins.Core;
-using Warudo.Plugins.MikanXR.Nodes;
+using Warudo.Plugins.MikanPlugin.Nodes;
 using MikanXR;
+using Warudo.Core;
 
 namespace Warudo.Plugins.StreamDeck {
     [PluginType(
@@ -21,8 +22,6 @@ namespace Warudo.Plugins.StreamDeck {
 
         protected override void OnCreate() {
             var corePlugin = Context.PluginManager.GetPlugin<CorePlugin>();
-            corePlugin.RegisterCharacterTrackingTemplate<VMCFaceTrackingTemplate>(this);
-            corePlugin.RegisterCharacterTrackingTemplate<VMCPoseTrackingTemplate>(this);
         }
         protected override void OnDestroy() {
             base.OnDestroy();
