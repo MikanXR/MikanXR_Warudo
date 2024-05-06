@@ -21,13 +21,13 @@ namespace Warudo.Plugins.MikanPlugin.Assets
 		[Label("PORT")]
 		public int Port = 8080;
 
-		private MikanClientBehavior mikanClient;
+		private MikanClientBehavior mikanClientBehavior;
 
 		protected override void OnCreate()
 		{
 			base.OnCreate();
 			var gameObject = new GameObject("Mikan Client");
-			mikanClient = gameObject.AddComponent<MikanClientBehavior>();
+			mikanClientBehavior = gameObject.AddComponent<MikanClientBehavior>();
 			Watch(nameof(Address), ResetConnection);
 			Watch(nameof(Port), ResetConnection);
 			ResetConnection();
@@ -36,17 +36,17 @@ namespace Warudo.Plugins.MikanPlugin.Assets
 		protected override void OnDestroy()
 		{
 			base.OnDestroy();
-			if (mikanClient != null)
+			if (mikanClientBehavior != null)
 			{
-				Object.Destroy(mikanClient.gameObject);
-				mikanClient = null;
+				Object.Destroy(mikanClientBehavior.gameObject);
+				mikanClientBehavior = null;
 			}
 		}
 
 		public void ResetConnection()
 		{
-			mikanClient.Disconnect();
-			mikanClient.Connect(Address, Port);
+			mikanClientBehavior.Disconnect();
+			mikanClientBehavior.Connect(Address, Port);
 		}
 	}
 }
