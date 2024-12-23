@@ -21,8 +21,11 @@ namespace Warudo.Plugins.MikanPlugin {
              typeof(OnMikanConnectedNode)
          })]
     public class MikanPlugin : Plugin {
-        
-        public MikanAPI ClientAPI { get; } = new();
+
+		private MikanLogger _logger = null;
+		public MikanLogger Logger => _logger;
+
+		public MikanAPI ClientAPI { get; } = new();
         public MikanEventController EventController { get; } = new();
 
         protected override void OnCreate() 
@@ -41,54 +44,55 @@ namespace Warudo.Plugins.MikanPlugin {
 		private bool InitializeMikanAPI()
 		{
 			// Set the logging callback first that so that we can can see init errors
-			ClientAPI.SetLogCallback(this.Log);
+			_logger = ClientAPI.CoreAPI.Logger;
+			_logger.AddLogCallback(Log);
 
 			// Attempt to initialize the Mikan API (load MikanCore.dll)
-			if (ClientAPI.Initialize(MikanLogLevel.Info) != MikanResult.Success)
+			if (ClientAPI.Initialize(MikanLogLevel.Info) != MikanAPIResult.Success)
 			{
 				Warudo.Core.Utils.Log.Error("Failed to initialize MikanAPI");
 				return false;
 			}
 
 			// Determine which graphics API is being used by Unity
-			MikanClientGraphicsApi unityGraphicsAPI = MikanClientGraphicsApi.UNKNOWN;
-			switch (SystemInfo.graphicsDeviceType)
-			{
-			case GraphicsDeviceType.Direct3D11:
-				unityGraphicsAPI = MikanClientGraphicsApi.Direct3D11;
-				break;
-			case GraphicsDeviceType.Direct3D12:
-				unityGraphicsAPI = MikanClientGraphicsApi.Direct3D12;
-				break;
-			case GraphicsDeviceType.OpenGLCore:
-			case GraphicsDeviceType.OpenGLES2:
-			case GraphicsDeviceType.OpenGLES3:
-				unityGraphicsAPI = MikanClientGraphicsApi.OpenGL;
-				break;
-			default:
-				Warudo.Core.Utils.Log.Error($"Unsupported graphics API: {SystemInfo.graphicsDeviceType}");
-				return false;
-			}
+			//MikanClientGraphicsApi unityGraphicsAPI = MikanClientGraphicsApi.UNKNOWN;
+			//switch (SystemInfo.graphicsDeviceType)
+			//{
+			//case GraphicsDeviceType.Direct3D11:
+			//	unityGraphicsAPI = MikanClientGraphicsApi.Direct3D11;
+			//	break;
+			//case GraphicsDeviceType.Direct3D12:
+			//	unityGraphicsAPI = MikanClientGraphicsApi.Direct3D12;
+			//	break;
+			//case GraphicsDeviceType.OpenGLCore:
+			//case GraphicsDeviceType.OpenGLES2:
+			//case GraphicsDeviceType.OpenGLES3:
+			//	unityGraphicsAPI = MikanClientGraphicsApi.OpenGL;
+			//	break;
+			//default:
+			//	Warudo.Core.Utils.Log.Error($"Unsupported graphics API: {SystemInfo.graphicsDeviceType}");
+			//	return false;
+			//}
 
-			// Fill out the client info struct and send it to Mikan
-			if (ClientAPI.SetClientInfo(new MikanClientInfo()
-			{
-				clientId = "Warudo",
-				engineName = "Unity",
-				engineVersion = Application.unityVersion,
-				applicationName = Application.productName,
-				applicationVersion = Application.version,
-				xrDeviceName = XRSettings.loadedDeviceName,
-				graphicsAPI = unityGraphicsAPI,
-				supportsRGB24 = SystemInfo.SupportsTextureFormat(TextureFormat.RGB24),
-				supportsRGBA32 = SystemInfo.SupportsTextureFormat(TextureFormat.RGBA32),
-				supportsBGRA32 = SystemInfo.SupportsTextureFormat(TextureFormat.BGRA32),
-				supportsDepth = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.Depth)
-			}) != MikanResult.Success)
-			{
-				Warudo.Core.Utils.Log.Error("Failed to set Mikan client info");
-				return false;
-			}
+			//// Fill out the client info struct and send it to Mikan
+			//if (ClientAPI.SetClientInfo(new MikanClientInfo()
+			//{
+			//	clientId = "Warudo",
+			//	engineName = "Unity",
+			//	engineVersion = Application.unityVersion,
+			//	applicationName = Application.productName,
+			//	applicationVersion = Application.version,
+			//	xrDeviceName = XRSettings.loadedDeviceName,
+			//	graphicsAPI = unityGraphicsAPI,
+			//	supportsRGB24 = SystemInfo.SupportsTextureFormat(TextureFormat.RGB24),
+			//	supportsRGBA32 = SystemInfo.SupportsTextureFormat(TextureFormat.RGBA32),
+			//	supportsBGRA32 = SystemInfo.SupportsTextureFormat(TextureFormat.BGRA32),
+			//	supportsDepth = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.Depth)
+			//}) != MikanAPIResult.Success)
+			//{
+			//	Warudo.Core.Utils.Log.Error("Failed to set Mikan client info");
+			//	return false;
+			//}
 
 			return true;
 		}

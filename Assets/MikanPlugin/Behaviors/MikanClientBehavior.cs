@@ -42,9 +42,9 @@ namespace Warudo.Plugins.MikanPlugin.Behaviors
 
 		protected void AttemptReconnection()
 		{
-			MikanResult result= clientAPI.Connect(desiredAddress, desiredPort);
-			if (result != MikanResult.Success && 
-				result != MikanResult.AlreadyConnected)
+			MikanAPIResult result= clientAPI.Connect(desiredAddress, desiredPort);
+			if (result != MikanAPIResult.Success && 
+				result != MikanAPIResult.AlreadyConnected)
 			{
 				// Reset reconnect attempt timer
 				reconnectTimer = 1.0f;
@@ -73,7 +73,7 @@ namespace Warudo.Plugins.MikanPlugin.Behaviors
 		{
 			if (clientAPI.GetIsConnected())
 			{
-				while (clientAPI.FetchNextEvent(out MikanEvent mikanEvent) == MikanResult.Success)
+				while (clientAPI.FetchNextEvent(out MikanEvent mikanEvent) == MikanAPIResult.Success)
 				{
 					HandleMikanEvent(mikanEvent);
 				}

@@ -35,7 +35,7 @@ namespace Warudo.Plugins.MikanPlugin {
 
         public void HandleMikanEvent(MikanEvent mikanEvent)
         {
-			if (_eventHandlers.TryGetValue(mikanEvent.eventType, out var handlers))
+			if (_eventHandlers.TryGetValue(mikanEvent.eventTypeName, out var handlers))
             {
 				foreach (var handler in handlers)
                 {

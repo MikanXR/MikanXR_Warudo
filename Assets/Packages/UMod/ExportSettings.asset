@@ -13,16 +13,8 @@ MonoBehaviour:
   m_Name: ExportSettings
   m_EditorClassIdentifier: 
   activeProfile: 0
-  exportProfiles:
-  - referencePaths: []
-    modName: MikanXR
-    modAuthor: Brendan Walker
-    modVersion: 1.0.0
-    modDescription: MikanXR mixed reality compositor for Warudo
-    modAssetPath: D:\Github\git-BrendanWalker\MikanXR_Warudo\Assets\MikanPlugin
-    modExportPath: D:\Program Files (x86)\Steam\steamapps\common\Warudo\Warudo_Data\StreamingAssets\MikanXR
-    modIcon: {fileID: 2800000, guid: 5f51e0b22aa8cb84b9f422576ce87ff9, type: 3}
-  logLevel: 4
+  exportProfiles: []
+  logLevel: 3
   optimizeMode: 0
   compressionLevel: 2
   clearConsoleOnBuild: 1

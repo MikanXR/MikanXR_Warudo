@@ -1,106 +1,139 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Text;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace MikanXR
 {
-	public interface IMikanEventFactory
-	{
-		MikanEvent CreateEvent(string utfJsonString);
-	}
-
-	public class MikanEventFactory<T> : IMikanEventFactory where T : MikanEvent
-	{
-		public MikanEvent CreateEvent(string utfJsonString)
-		{
-			// Deserialize enumerations from strings rather than from integers
-			var stringEnumConverter = new Newtonsoft.Json.Converters.StringEnumConverter();
-			var settings = new JsonSerializerSettings();
-			settings.Converters.Add(stringEnumConverter);
-
-			T response= JsonConvert.DeserializeObject<T>(utfJsonString, settings);
-
-			return response;
-		}
-	}
-	
 	public class MikanEventManager
 	{
-		private MikanCoreNative.NativeLogCallback _nativeLogCallback;
-		private Dictionary<string, IMikanEventFactory> _eventFactories;
-	
-		public MikanEventManager(MikanCoreNative.NativeLogCallback logCallback)
+		public static readonly string WEBSOCKET_DISCONNECT_EVENT = "disconnect";
+
+		private MikanCoreAPI _coreAPI;
+		private MikanLogger _logger;
+		private Dictionary<long, Type> _eventTypeCache = null;
+
+		public MikanEventManager(MikanCoreAPI coreAPI)
 		{
-			_nativeLogCallback= logCallback;
-			_eventFactories = new Dictionary<string, IMikanEventFactory>();
+			_coreAPI = coreAPI;
+			_logger = coreAPI.Logger;
+			_eventTypeCache = new Dictionary<long, Type>();
 		}
 
-		public void AddEventFactory<T>() where T : MikanEvent
+		public void Initialize()
 		{
-			var factory = new MikanEventFactory<T>();
+			// Build a map from ClassId to MikanEvent Type
+			var eventTypes = from t in Assembly.GetExecutingAssembly().GetTypes()
+					where t.IsClass && t.Namespace == "MikanXR" && typeof(MikanEvent).IsAssignableFrom(t)
+					select t;
+			eventTypes.ToList().ForEach(t =>
+			{
+				var classIdProperty = t.GetProperty("classId", BindingFlags.Public | BindingFlags.Static);
+				if (classIdProperty != null)
+				{
+					long classId = Utils.getMikanClassId(t);
 
-			_eventFactories.Add(typeof(T).Name, factory);
+					_eventTypeCache[classId] = t;
+				}
+			});
 		}
 
-		public MikanResult FetchNextEvent(out MikanEvent outEvent)
+		public MikanAPIResult FetchNextEvent(out MikanEvent outEvent)
 		{
-			StringBuilder utf8Buffer = new StringBuilder(1024);
-			UIntPtr utf8BufferSize = (UIntPtr)utf8Buffer.Capacity;
-
 			outEvent= null;
 
-			var result = (MikanResult)MikanCoreNative.Mikan_FetchNextEvent(
-				utf8BufferSize, utf8Buffer, out UIntPtr utf8BytesWritten);
-			if (result == MikanResult.Success)
-			{
-				string utf8BufferString = utf8Buffer.ToString();
-				
-				outEvent = parseEventString(utf8BufferString);
+			var result = _coreAPI.FetchNextEvent(out string message);
+			if (result == MikanAPIResult.Success)
+			{			
+				outEvent = parseEventString(message);
 				if (outEvent == null)
 				{
-					_nativeLogCallback((int)MikanLogLevel.Error, 
-						"fetchNextEvent() - failed to parse event string: " + utf8BufferString);
-					result = MikanResult.MalformedResponse;
+					_logger.Log(
+						MikanLogLevel.Error, 
+						$"fetchNextEvent() - failed to parse event string: {message}");
+					result = MikanAPIResult.MalformedResponse;
 				}
 			}
 			
-			return (MikanResult)result;
+			return (MikanAPIResult)result;
 		}
 
 		private MikanEvent parseEventString(string utf8ResponseString)
 		{
-			MikanEvent mikanEvent = null;
+			MikanEvent mikanEvent= null;
 
-			var root= (JObject)JsonConvert.DeserializeObject(utf8ResponseString);
-
-			// Check if the key "eventType" exists
-			if (root.TryGetValue("eventType", out JToken eventTypeElement))
+			if (utf8ResponseString.StartsWith(WEBSOCKET_DISCONNECT_EVENT))
 			{
-				// Check if the value of "eventType" is a string
-				if (eventTypeElement.Type == JTokenType.String)
+				int disconnectCode = 0;
+				string disconnectReason = "";
+
+				string[] tokens = utf8ResponseString.Split(new char[] {':'});
+				if (tokens.Length >= 3)
 				{
-					// Get the string value of "eventType"
-					string eventType = (string)eventTypeElement;
-					
-					if (_eventFactories.TryGetValue(eventType, out IMikanEventFactory factory))
+					int.TryParse(tokens[1], out disconnectCode);
+					disconnectReason = tokens[2];
+				}
+
+				var disconnectEventPtr = new MikanDisconnectedEvent();
+				disconnectEventPtr.eventTypeId = MikanDisconnectedEvent.classId;
+				disconnectEventPtr.eventTypeName = typeof(MikanDisconnectedEvent).Name;
+				disconnectEventPtr.code = (MikanDisconnectCode)disconnectCode;
+				disconnectEventPtr.reason= disconnectReason;
+
+				mikanEvent= disconnectEventPtr;
+			}
+			else
+			{
+				var root = JObject.Parse(utf8ResponseString);
+
+				// Check if the "eventTypeName" and "eventTypeId" keys exist
+				if (root.TryGetValue("eventTypeName", out JToken eventTypeNameElement) &&
+					root.TryGetValue("eventTypeId", out JToken eventTypeIdElement))
+				{
+					// Check if the value of eventType keys
+					if (eventTypeNameElement.Type == JTokenType.String &&
+						eventTypeIdElement.Type == JTokenType.Integer)
 					{
-						mikanEvent = factory.CreateEvent(utf8ResponseString);
+						// Get the string value of "eventTypeName"
+						string eventTypeName = (string)eventTypeNameElement;
+						// Get the integer value of "eventTypeId"
+						long eventTypeId = (long)eventTypeIdElement;
+
+						// Attempt to create the event object by class name
+						if (_eventTypeCache.TryGetValue(eventTypeId, out Type eventType))
+						{
+							object eventObject = Activator.CreateInstance(eventType);
+
+							// Deserialize the event object from the JSON string
+							if (JsonDeserializer.deserializeFromJsonString(utf8ResponseString, eventObject, eventType))
+							{
+								mikanEvent = (MikanEvent)eventObject;
+							}
+							else
+							{
+								_logger.Log(
+									MikanLogLevel.Error,
+									$"Failed to deserialize event object from JSON string: {utf8ResponseString}");
+							}
+						}
+						else
+						{
+							_logger.Log(
+								MikanLogLevel.Error,
+								$"Unknown event type: {eventTypeName} (classId: {eventTypeId})");
+						}
 					}
 					else
 					{
-						_nativeLogCallback((int)MikanLogLevel.Error, "Unknown event type: " + eventType);
+						_logger.Log(MikanLogLevel.Error, "eventTypes not of expected types.");
 					}
 				}
 				else
 				{
-					_nativeLogCallback((int)MikanLogLevel.Error, "eventType is not a string.");
+					_logger.Log(MikanLogLevel.Error, "eventType keys not found.");
 				}
-			}
-			else
-			{
-				_nativeLogCallback((int)MikanLogLevel.Error, "eventType key not found.");
 			}
 
 			return mikanEvent;

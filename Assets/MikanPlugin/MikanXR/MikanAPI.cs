@@ -3,21 +3,11 @@ using System;
 using System.Threading.Tasks;
 
 namespace MikanXR
-{	
-	public class MikanClientInfo
+{
+	public static class Constants
 	{
-		public string clientId { get; set; } = "";
-		public string engineName { get; set; } = "";
-		public string engineVersion { get; set; } = "";
-		public string applicationName { get; set; } = "";
-		public string applicationVersion { get; set; } = "";
-		public string xrDeviceName { get; set; } = "";
-		public MikanClientGraphicsApi graphicsAPI { get; set; } = MikanClientGraphicsApi.UNKNOWN;
-		public int mikanCoreSdkVersion { get; set; } = -1;
-		public bool supportsRGB24 { get; set; } = false;
-		public bool supportsRGBA32 { get; set; } = false;
-		public bool supportsBGRA32 { get; set; } = false;
-		public bool supportsDepth { get; set; } = false;
+		public const int MIKAN_CLIENT_API_VERSION = 0;
+		public const int INVALID_MIKAN_ID = -1;
 	}
 
 	public class MikanAPI : IDisposable
@@ -26,203 +16,117 @@ namespace MikanXR
 			MikanLogLevel log_level,
 			string log_message);
 
-		private MikanCoreNative.NativeLogCallback _nativeLogCallback;
-		private MikanLogCallback _logCallback;
-		
+		private	MikanCoreAPI _coreAPI;
+		public MikanCoreAPI CoreAPI => _coreAPI;
+
 		private MikanRequestManager _requestManager;
-		public MikanRequestManager RequestManager => _requestManager;
-		
 		private MikanEventManager _eventManager;
-		public MikanEventManager EventManager => _eventManager;
-		
-		private MikanVideoSourceAPI _videoSourceAPI;
-		public MikanVideoSourceAPI VideoSourceAPI => _videoSourceAPI;
-		
-		private MikanVRDeviceAPI _vrDeviceAPI;
-		public MikanVRDeviceAPI VRDeviceAPI => _vrDeviceAPI;
-		
-		private MikanScriptAPI _scriptAPI;
-		public MikanScriptAPI ScriptAPI => _scriptAPI;
-		
-		private MikanStencilAPI _stencilAPI;
-		public MikanStencilAPI StencilAPI => _stencilAPI;
-		
-		private MikanSpatialAnchorAPI _spatialAnchorAPI;
-		public MikanSpatialAnchorAPI SpatialAnchorAPI => _spatialAnchorAPI;
+		private MikanRenderTargetAPI _renderTargetAPI;
+
+		// -- API Lifecycle ----
 
 		public MikanAPI()
 		{
-			_nativeLogCallback = new MikanCoreNative.NativeLogCallback(InternalLogCallback);
-			_requestManager = new MikanRequestManager(_nativeLogCallback);
-			_eventManager = new MikanEventManager(_nativeLogCallback);
-			
-			// Create the child APIs
-			_videoSourceAPI = new MikanVideoSourceAPI(_requestManager);	
-			_vrDeviceAPI = new MikanVRDeviceAPI(_requestManager);	
-			_scriptAPI = new MikanScriptAPI(_requestManager);
-			_stencilAPI = new MikanStencilAPI(_requestManager);
-			_spatialAnchorAPI = new MikanSpatialAnchorAPI(_requestManager);
-			
-			// Register base response types (child API classes will register their own types)
-			_requestManager.AddResponseFactory<MikanResponse>();
-			
-			// Register all event types
-			_eventManager.AddEventFactory<MikanConnectedEvent>();
-			_eventManager.AddEventFactory<MikanDisconnectedEvent>();
-			_eventManager.AddEventFactory<MikanVideoSourceOpenedEvent>();
-			_eventManager.AddEventFactory<MikanVideoSourceClosedEvent>();
-			_eventManager.AddEventFactory<MikanVideoSourceNewFrameEvent>();
-			_eventManager.AddEventFactory<MikanVideoSourceAttachmentChangedEvent>();
-			_eventManager.AddEventFactory<MikanVideoSourceIntrinsicsChangedEvent>();
-			_eventManager.AddEventFactory<MikanVideoSourceModeChangedEvent>();
-			_eventManager.AddEventFactory<MikanVRDevicePoseUpdateEvent>();
-			_eventManager.AddEventFactory<MikanVRDeviceListUpdateEvent>();
-			_eventManager.AddEventFactory<MikanAnchorPoseUpdateEvent>();
-			_eventManager.AddEventFactory<MikanAnchorListUpdateEvent>();
-			_eventManager.AddEventFactory<MikanScriptMessagePostedEvent>();
+			_coreAPI = new MikanCoreAPI();
+
+			_requestManager = new MikanRequestManager(_coreAPI);
+			_eventManager = new MikanEventManager(_coreAPI);
+			_renderTargetAPI = new MikanRenderTargetAPI(_requestManager);
 		}
 
 		public void Dispose()
-		{
-
+		{			
+			Shutdown();
+			_requestManager= null;
+			_eventManager= null;
+			_renderTargetAPI= null;
 		}
 
-		public MikanResult Initialize(MikanLogLevel minLogLevel)
+		public MikanAPIResult Initialize(MikanLogLevel minLogLevel)
 		{
-			MikanResult result = (MikanResult)MikanCoreNative.Mikan_Initialize(minLogLevel, _nativeLogCallback);
-			if (result != MikanResult.Success)
+			MikanAPIResult result = _coreAPI.Initialize(minLogLevel);
+			if (result != MikanAPIResult.Success)
 			{
 				return result;
 			}
-			
-			result= _requestManager.Initialize();
-			if (result != MikanResult.Success)
+
+			result = _requestManager.Initialize();
+			if (result != MikanAPIResult.Success)
 			{
 				return result;
 			}
 
-			return MikanResult.Success;
+			_eventManager.Initialize();
+			_renderTargetAPI.Initialize();
+
+			return MikanAPIResult.Success;
 		}
 
-		public MikanResult Shutdown()
+		public bool GetIsInitialized()
 		{
-			int result = MikanCoreNative.Mikan_Shutdown();
-			return (MikanResult)result;
+			return _coreAPI.GetIsInitialized();
 		}
 
-		public int GetCoreSDKVersion()
+		public MikanAPIResult Shutdown()
 		{
-			return MikanCoreNative.Mikan_GetCoreSDKVersion();
+			return _coreAPI.Shutdown();
+		}
+
+		// -- Client Info ----
+
+		public int GetClientAPIVersion()
+		{
+			return _coreAPI.GetClientAPIVersion();
 		}
 
 		public string GetClientUniqueID()
 		{
-			return MikanCoreNative.GetClientUniqueID();
-		}
-		
-		public bool GetIsInitialized()
-		{
-			return MikanCoreNative.Mikan_GetIsInitialized();
+			return  _coreAPI.GetClientUniqueID();
 		}
 
-		public MikanResult SetGraphicsDeviceInterface(
-			MikanClientGraphicsApi api, 
-			IntPtr graphicsDeviceInterface)
+		public MikanClientInfo AllocateClientInfo()
 		{
-			int result = MikanCoreNative.Mikan_SetGraphicsDeviceInterface(api, graphicsDeviceInterface);
-			return (MikanResult)result;
-		}
+			MikanClientInfo clientInfo = new MikanClientInfo();
 
-		public MikanResult GetGraphicsDeviceInterface(
-			MikanClientGraphicsApi api, 
-			out IntPtr outGraphicsDeviceInterface)
-		{
-			int result = MikanCoreNative.Mikan_GetGraphicsDeviceInterface(api, out outGraphicsDeviceInterface);
-			return (MikanResult)result;
-		}
-
-		public Task<MikanResponse> AllocateRenderTargetTextures(ref MikanRenderTargetDescriptor descriptor)
-		{
-			MikanResult result = 
-				(MikanResult)MikanCoreNative.Mikan_AllocateRenderTargetTextures(
-					ref descriptor, out int requestId);
-
-			return _requestManager.AddResponseHandler(requestId, result);
-		}
-
-		public MikanResult PublishRenderTargetTextures(
-			IntPtr apiColorTexturePtr, 
-			IntPtr apiDepthTexturePtr,
-			ref MikanClientFrameRendered frameInfo)
-		{
-			MikanResult result = 
-				(MikanResult)MikanCoreNative.Mikan_PublishRenderTargetTextures(
-					apiColorTexturePtr, 
-					apiDepthTexturePtr,
-					ref frameInfo);
-
-			return result;
-		}
-
-		public Task<MikanResponse> FreeRenderTargetTextures()
-		{
-			MikanResult result = (MikanResult)MikanCoreNative.Mikan_FreeRenderTargetTextures(out int requestId);
-
-			return _requestManager.AddResponseHandler(requestId, result);
-		}
-
-		public IntPtr GetPackDepthTextureResourcePtr()
-		{
-			return MikanCoreNative.Mikan_GetPackDepthTextureResourcePtr();
-		}
-
-		public MikanResult SetClientInfo(MikanClientInfo clientInfo)
-		{
-			// Stamp with the core sdk version
-			clientInfo.mikanCoreSdkVersion = GetCoreSDKVersion();
+			// Stamp the request with the client API version and client id
 			clientInfo.clientId = GetClientUniqueID();
 
-			// Serialize enumerations from strings rather than from integers
-			var stringEnumConverter = new Newtonsoft.Json.Converters.StringEnumConverter();
-			string clientInfoString = JsonConvert.SerializeObject(clientInfo, stringEnumConverter);
-			int result = MikanCoreNative.Mikan_SetClientProperty("clientInfo", clientInfoString);
-
-			return (MikanResult)result;
+			return clientInfo;
 		}
 
-		public MikanResult Connect(string host="", string port="")
+		// -- Client Info ----
+
+		public MikanAPIResult Connect(string host="", string port="")
 		{
-			int result = MikanCoreNative.Mikan_Connect(host, port);
-			return (MikanResult)result;
+			return _coreAPI.Connect(host, port);
 		}
 
 		public bool GetIsConnected()
 		{
-			return MikanCoreNative.Mikan_GetIsConnected();
+			return _coreAPI.GetIsConnected();
 		}
 
-		public MikanResult FetchNextEvent(out MikanEvent outEvent)
+		public MikanAPIResult Disconnect()
+		{
+			return _coreAPI.Disconnect(0, "");
+		}
+
+		// -- Messaging ----
+		
+		public MikanResponseFuture SendRequest(MikanRequest request)
+		{
+			MikanResponseFuture response = _renderTargetAPI.TryProcessRequest(request);
+			if (!response.IsValid())
+			{
+				response= _requestManager.SendRequest(request);
+			}
+
+			return response;
+		}
+
+		public MikanAPIResult FetchNextEvent(out MikanEvent outEvent)
 		{
 			return _eventManager.FetchNextEvent(out outEvent);
-		}
-
-		public MikanResult Disconnect()
-		{
-			int result = MikanCoreNative.Mikan_Disconnect();
-			return (MikanResult)result;
-		}
-
-		public void	SetLogCallback(MikanLogCallback logCallback)
-		{
-			_logCallback = logCallback;
-		}
-
-		private void InternalLogCallback(int logLevel, string logMessage)
-		{
-			if (_logCallback != null)
-			{
-				_logCallback((MikanLogLevel)logLevel, logMessage);
-			}
 		}
 	}
 }
