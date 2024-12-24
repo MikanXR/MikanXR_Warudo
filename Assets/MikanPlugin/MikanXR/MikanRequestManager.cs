@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
 using Newtonsoft.Json.Linq;
-using System.IO;
 using System.Reflection;
 using System.Linq;
 
@@ -258,7 +257,7 @@ namespace MikanXR
 
 		private bool InternalBinaryResponseHandler(byte[] responseBytes, out string errorMesg)
 		{
-			var binaryReader = new BinaryReader(new MemoryStream(responseBytes));
+			var binaryReader = new BinaryReader(responseBytes);
 			bool success = true;
 
 			errorMesg= "";
@@ -328,13 +327,6 @@ namespace MikanXR
 			{
 				errorMesg= $"Malformed binary response: {e.Message}";
 				success= false;
-			}
-			finally
-			{
-				if (binaryReader != null)
-				{
-					binaryReader.Dispose();
-				}
 			}
 
 			return success;
