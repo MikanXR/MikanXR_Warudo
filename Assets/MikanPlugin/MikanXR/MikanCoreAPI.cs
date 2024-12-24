@@ -1,6 +1,4 @@
 ﻿using System;
-using UnityEngine;
-using System.Reflection;
 
 namespace MikanXR
 {
@@ -14,12 +12,6 @@ namespace MikanXR
 
 		private MikanMessageClient _messageClient;
 		public MikanMessageClient MessageClient => _messageClient;
-
-		private System.Type _spoutSenderType = null;
-		private MethodInfo _spoutSenderUpdateMethodInfo = null;
-		private MethodInfo _spoutSenderDisposeMethodInfo = null;
-		private System.Object _colorSenderObject = null;
-		private System.Object _depthSenderObject = null;
 
 		public MikanCoreAPI()
 		{
@@ -57,20 +49,15 @@ namespace MikanXR
 				return result;
 			}
 
-			// Use reflection to fetch the KlakSpout API
-			FetchSpoutAPI();
-
 			_isInitialized = true;
 
 			return MikanAPIResult.Success;
 		}
 
-		public MikanAPIResult Shutdown()
+		public void Shutdown()
 		{
 			_messageClient.Disconnect();
 			_isInitialized = false;
-
-			return MikanAPIResult.Success;
 		}
 
 		public int GetClientAPIVersion()
@@ -86,46 +73,6 @@ namespace MikanXR
 		public bool GetIsInitialized()
 		{
 			return _isInitialized;
-		}
-
-		public MikanAPIResult SetClientInfo(string clientInfo)
-		{
-			return _messageClient.SetClientInfo(clientInfo);
-		}
-
-		public MikanAPIResult GetRenderTargetDescriptor(out MikanRenderTargetDescriptor out_descriptor)
-		{
-			out_descriptor = new MikanRenderTargetDescriptor();
-
-			return MikanAPIResult.GeneralError;
-		}
-
-		public MikanAPIResult AllocateRenderTargetTextures(MikanRenderTargetDescriptor descriptor)
-		{
-			// TODO
-			return MikanAPIResult.GeneralError;
-		}
-
-		public MikanAPIResult FreeRenderTargetTextures()
-		{
-			// TODO
-			return MikanAPIResult.GeneralError;
-		}
-
-		public MikanAPIResult WriteColorRenderTargetTexture(RenderTexture color_texture)
-		{
-			// TODO
-
-			return MikanAPIResult.GeneralError;
-		}
-
-		public MikanAPIResult WriteDepthRenderTargetTexture(
-			RenderTexture depth_texture,
-			float z_near,
-			float z_far)
-		{
-			// TODO
-			return MikanAPIResult.GeneralError;
 		}
 
 		public MikanAPIResult Connect(string host = "", string port = "")
@@ -168,41 +115,5 @@ namespace MikanXR
 				return MikanAPIResult.NotConnected;
 			}
 		}
-
-		private void FetchSpoutAPI()
-		{
-			Assembly sysData = Assembly.Load("Klak.Spout.Runtime");
-			_spoutSenderType = sysData.GetType("Klak.Spout.Sender");
-
-			_spoutSenderUpdateMethodInfo = _spoutSenderType.GetMethod("Update");
-			_spoutSenderDisposeMethodInfo = _spoutSenderType.GetMethod("Dispose");
-		}
-
-		private System.Object CreateSender(string senderName, Texture renderTexture)
-		{
-			return Activator.CreateInstance(
-				   _spoutSenderType,
-				   BindingFlags.Instance
-				   | BindingFlags.Public
-				   | BindingFlags.NonPublic,
-				   null,
-				   new System.Object[] { senderName, renderTexture }, // or your actual constructor arguments
-				   null
-				);
-		}
-
-		private void ReleaseSender(ref System.Object senderObject)
-		{
-			if (senderObject != null)
-			{
-				if (_spoutSenderDisposeMethodInfo != null)
-				{
-					_spoutSenderDisposeMethodInfo.Invoke(senderObject, null);
-				}
-
-				senderObject = null;
-			}
-		}
-
 	}
 }

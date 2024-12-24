@@ -1,6 +1,4 @@
-using Newtonsoft.Json;
 using System;
-using System.Threading.Tasks;
 
 namespace MikanXR
 {
@@ -19,16 +17,17 @@ namespace MikanXR
 		private	MikanCoreAPI _coreAPI;
 		public MikanCoreAPI CoreAPI => _coreAPI;
 
+		private MikanRenderTargetAPI _renderTargetAPI;
+		public MikanRenderTargetAPI RenderTargetAPI => _renderTargetAPI;
+
 		private MikanRequestManager _requestManager;
 		private MikanEventManager _eventManager;
-		private MikanRenderTargetAPI _renderTargetAPI;
 
 		// -- API Lifecycle ----
 
 		public MikanAPI()
 		{
 			_coreAPI = new MikanCoreAPI();
-
 			_requestManager = new MikanRequestManager(_coreAPI);
 			_eventManager = new MikanEventManager(_coreAPI);
 			_renderTargetAPI = new MikanRenderTargetAPI(_requestManager);
@@ -69,7 +68,10 @@ namespace MikanXR
 
 		public MikanAPIResult Shutdown()
 		{
-			return _coreAPI.Shutdown();
+			_renderTargetAPI.Shutdown();
+			_coreAPI.Shutdown();
+
+			return MikanAPIResult.Success;
 		}
 
 		// -- Client Info ----
