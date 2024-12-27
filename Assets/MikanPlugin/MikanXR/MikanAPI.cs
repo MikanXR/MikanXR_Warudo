@@ -14,6 +14,8 @@ namespace MikanXR
 			MikanLogLevel log_level,
 			string log_message);
 
+		private MikanClient _ownerClient= null;
+
 		private	MikanCoreAPI _coreAPI;
 		public MikanCoreAPI CoreAPI => _coreAPI;
 
@@ -25,8 +27,9 @@ namespace MikanXR
 
 		// -- API Lifecycle ----
 
-		public MikanAPI()
+		public MikanAPI(MikanClient ownerClient)
 		{
+			_ownerClient= ownerClient;
 			_coreAPI = new MikanCoreAPI();
 			_requestManager = new MikanRequestManager(_coreAPI);
 			_eventManager = new MikanEventManager(_coreAPI);
@@ -56,7 +59,7 @@ namespace MikanXR
 			}
 
 			_eventManager.Initialize();
-			_renderTargetAPI.Initialize();
+			_renderTargetAPI.Initialize(_ownerClient.OwnerManager.OwnerPlugin.Settings);
 
 			return MikanAPIResult.Success;
 		}

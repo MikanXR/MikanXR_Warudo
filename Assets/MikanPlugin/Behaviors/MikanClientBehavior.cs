@@ -17,9 +17,9 @@ namespace Warudo.Plugins.MikanPlugin.Behaviors
 
 		private void Awake()
 		{
-			var plugin = Context.PluginManager.GetPlugin<MikanPlugin>();
+			var plugin = Context.PluginManager.GetPlugin<MikanXRPlugin>();
 
-			clientAPI = plugin.ClientAPI;
+			clientAPI = plugin.Client.ClientAPI;
 			eventController = plugin.EventController;
 		}
 

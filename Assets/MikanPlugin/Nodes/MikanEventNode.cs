@@ -5,12 +5,12 @@ using Warudo.Core.Graphs;
 using Warudo.Core.Localization;
 using Warudo.Plugins.MikanPlugin;
 
-namespace Warudo.Plugins.MikanPlugin.Nodes
+namespace MikanXR.Nodes
 {
 	public abstract class MikanEventNode : Node, IMikanEventHandler
     {
 		protected MikanEventController EventController => 
-			Context.PluginManager.GetPlugin<MikanPlugin>().EventController;
+			Context.PluginManager.GetPlugin<MikanXRPlugin>().EventController;
 
 		public virtual string EventType => throw new System.NotImplementedException();
 

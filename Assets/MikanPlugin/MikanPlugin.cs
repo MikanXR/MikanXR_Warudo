@@ -2,15 +2,11 @@
 using Warudo.Core.Attributes;
 using Warudo.Core.Plugins;
 using Warudo.Plugins.Core;
-using Warudo.Plugins.MikanPlugin.Nodes;
-using MikanXR;
+using MikanXR.Nodes;
 using Warudo.Core;
 using UnityEngine;
-using UnityEngine.Rendering;
-using UnityEngine.XR;
-using System;
 
-namespace Warudo.Plugins.MikanPlugin {
+namespace MikanXR {
     [PluginType(
         Id = "Warudo.MikanXR",
         Name = "MIKAN_XR",
@@ -20,86 +16,121 @@ namespace Warudo.Plugins.MikanPlugin {
          NodeTypes = new[] {
              typeof(OnMikanConnectedNode)
          })]
-    public class MikanPlugin : Plugin {
+    public class MikanXRPlugin : Plugin {
+
+		//TODO: Where do these get initialized from?
+		public Material modelStencilMaterial;
+		public GameObject anchorPrefab;
+		public GameObject stencilPrefab;
+
+		public float DefaultSceneScale = 1.0f;
+
+		private MikanSettings _settings = null;
+		public MikanSettings Settings => _settings;
+
+		private GameObject _mikanManagerGO = null;
+		private MikanManager _mikanManager = null;
+		public MikanManager Manager => _mikanManager;
+
+		private MikanClient _mikanClient = null;
+		public MikanClient Client => _mikanClient;
 
 		private MikanLogger _logger = null;
 		public MikanLogger Logger => _logger;
 
-		public MikanAPI ClientAPI { get; } = new();
-        public MikanEventController EventController { get; } = new();
+		public MikanEventController EventController { get; } = new();
 
-        protected override void OnCreate() 
+		private bool _isMikanInitialized = false;
+
+		protected override void OnCreate() 
         {
-            if (!InitializeMikanAPI())
+			Log(MikanLogLevel.Info, "MikanXRPlugin - Awake Called");
+
+			// Load the settings
+			InitSettings();
+
+			// Setup MikanManager, Client and Logger
+			if (!SetupMikan())
 			{
-				DisposeMikanAPI();
+				TearDownMikan();
 			}
-        }
-
-		protected override void OnDestroy() {
-            base.OnDestroy();
-            ClientAPI.Shutdown();
-        }
-
-		private bool InitializeMikanAPI()
-		{
-			// Set the logging callback first that so that we can can see init errors
-			_logger = ClientAPI.CoreAPI.Logger;
-			_logger.AddLogCallback(Log);
-
-			// Attempt to initialize the Mikan API (load MikanCore.dll)
-			if (ClientAPI.Initialize(MikanLogLevel.Info) != MikanAPIResult.Success)
-			{
-				Warudo.Core.Utils.Log.Error("Failed to initialize MikanAPI");
-				return false;
-			}
-
-			// Determine which graphics API is being used by Unity
-			//MikanClientGraphicsApi unityGraphicsAPI = MikanClientGraphicsApi.UNKNOWN;
-			//switch (SystemInfo.graphicsDeviceType)
-			//{
-			//case GraphicsDeviceType.Direct3D11:
-			//	unityGraphicsAPI = MikanClientGraphicsApi.Direct3D11;
-			//	break;
-			//case GraphicsDeviceType.Direct3D12:
-			//	unityGraphicsAPI = MikanClientGraphicsApi.Direct3D12;
-			//	break;
-			//case GraphicsDeviceType.OpenGLCore:
-			//case GraphicsDeviceType.OpenGLES2:
-			//case GraphicsDeviceType.OpenGLES3:
-			//	unityGraphicsAPI = MikanClientGraphicsApi.OpenGL;
-			//	break;
-			//default:
-			//	Warudo.Core.Utils.Log.Error($"Unsupported graphics API: {SystemInfo.graphicsDeviceType}");
-			//	return false;
-			//}
-
-			//// Fill out the client info struct and send it to Mikan
-			//if (ClientAPI.SetClientInfo(new MikanClientInfo()
-			//{
-			//	clientId = "Warudo",
-			//	engineName = "Unity",
-			//	engineVersion = Application.unityVersion,
-			//	applicationName = Application.productName,
-			//	applicationVersion = Application.version,
-			//	xrDeviceName = XRSettings.loadedDeviceName,
-			//	graphicsAPI = unityGraphicsAPI,
-			//	supportsRGB24 = SystemInfo.SupportsTextureFormat(TextureFormat.RGB24),
-			//	supportsRGBA32 = SystemInfo.SupportsTextureFormat(TextureFormat.RGBA32),
-			//	supportsBGRA32 = SystemInfo.SupportsTextureFormat(TextureFormat.BGRA32),
-			//	supportsDepth = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.Depth)
-			//}) != MikanAPIResult.Success)
-			//{
-			//	Warudo.Core.Utils.Log.Error("Failed to set Mikan client info");
-			//	return false;
-			//}
-
-			return true;
 		}
 
-		private void DisposeMikanAPI()
+		protected void InitSettings()
 		{
-			ClientAPI.Dispose();
+			// TODO: Load settings from Warudo (override Serialize() method?)
+			_settings = new MikanSettings();
+			if (!_settings.LoadSettings())
+			{
+				_settings.SceneScale = DefaultSceneScale;
+			}
+		}
+
+		private bool SetupMikan()
+		{
+			Log(MikanLogLevel.Info, "MikanXRPlugin - SetupMikan Called");
+
+			if (!_isMikanInitialized)
+			{
+				// Create the MikanManager
+				// TODO: Is it safe to create a new GameObject at this point?
+				_mikanManagerGO = new GameObject(
+					"MikanManagerObject",
+					new System.Type[] {
+						typeof(MikanManager)
+					});
+				_mikanManager = _mikanManagerGO.GetComponent<MikanManager>();
+				_mikanManager.Setup(this);
+
+				// Cache the MikanClient that the MikanManager created
+				_mikanClient = _mikanManager.MikanClient;
+
+				// Register the logger callback
+				_logger = _mikanClient.ClientAPI.CoreAPI.Logger;
+				_logger.AddLogCallback(Log);
+
+				_isMikanInitialized = true;
+			}
+
+			return _isMikanInitialized;
+		}
+
+		protected override void OnDestroy() 
+		{
+            base.OnDestroy();
+
+			Log(MikanLogLevel.Info, "MikanXRPlugin - OnDestroy Called");
+
+			TearDownMikan();
+		}
+
+		public override void OnApplicationQuit()
+		{
+			Log(MikanLogLevel.Info, "MikanXRPlugin - OnApplicationQuit Called");
+
+			TearDownMikan();
+		}
+
+		private void TearDownMikan()
+		{
+			Log(MikanLogLevel.Info, "MikanXRPlugin - TearDownMikan Called");
+
+			if (_isMikanInitialized)
+			{
+				if (_mikanManager != null)
+				{
+					_mikanManager.TearDown();
+				}
+
+				if (_logger != null)
+				{
+					_logger.RemoveLogCallback(Log);
+					_logger = null;
+				}
+
+				_mikanClient = null;
+				_isMikanInitialized = false;
+			}
 		}
 
 		private void Log(MikanLogLevel logLevel, string logMessage)

@@ -1,9 +1,8 @@
-using MikanXR;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Warudo.Plugins.MikanPlugin {
+namespace MikanXR {
     public class MikanEventController
     {
         private Dictionary<string, HashSet<IMikanEventHandler>> _eventHandlers = new();

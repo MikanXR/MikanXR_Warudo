@@ -30,13 +30,9 @@ namespace MikanXR
 					select t;
 			eventTypes.ToList().ForEach(t =>
 			{
-				var classIdProperty = t.GetProperty("classId", BindingFlags.Public | BindingFlags.Static);
-				if (classIdProperty != null)
-				{
-					long classId = Utils.getMikanClassId(t);
+				long classId = Utils.getMikanClassId(t);
 
-					_eventTypeCache[classId] = t;
-				}
+				_eventTypeCache[classId] = t;
 			});
 		}
 

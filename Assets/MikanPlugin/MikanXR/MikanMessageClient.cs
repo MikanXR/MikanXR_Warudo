@@ -9,10 +9,12 @@ namespace MikanXR
 {
 	public class MikanMessageClient : IDisposable
 	{
+		private static readonly string WEBSOCKET_PROTOCOL_PREFIX = "Mikan-";
+
 		private MikanLogger _logger= null;
 
 		private WebSocket _wsConnection;
-		private string _clientInfo;
+		private int _protocolVersion= 0;
 
 		class WebsocketEvent
 		{
@@ -55,10 +57,10 @@ namespace MikanXR
 		public MikanMessageClient(MikanLogger logger)
 		{
 			_logger = logger;
-			_clientInfo = "";
 			_websocketThreadEventQueue = new Queue<WebsocketEvent>();
-			_mainThreadEventQueue= new Queue<WebsocketEvent>();
-			_mainThreadMessageQueue= new Queue<string>();
+			_mainThreadEventQueue = new Queue<WebsocketEvent>();
+			_mainThreadMessageQueue = new Queue<string>();
+			_protocolVersion = (int)MikanConstants.ClientAPIVersion;
 		}
 
 		public MikanAPIResult Initialize()
@@ -71,17 +73,6 @@ namespace MikanXR
 			Disconnect();
 		}
 
-		public MikanAPIResult SetClientInfo(string clientInfo)
-		{
-			if (!clientInfo.IsNullOrEmpty())
-			{
-				_clientInfo= clientInfo;
-				return MikanAPIResult.Success;
-			}
-
-			return MikanAPIResult.GeneralError;
-		}
-
 		public MikanAPIResult Connect(string host, string port)
 		{
 			if (_wsConnection != null && _wsConnection.ReadyState == WebSocketSharp.WebSocketState.Open)
@@ -90,7 +81,31 @@ namespace MikanXR
 			}
 
 			string url = $"{host}:{port}";
-			_wsConnection = new WebSocket(url);
+			string protocol = $"{WEBSOCKET_PROTOCOL_PREFIX}{_protocolVersion}";
+			_wsConnection = new WebSocket(url, protocol);
+			_wsConnection.Log.Level = LogLevel.Info;
+			_wsConnection.Log.Output = (data, output) =>
+			{
+				switch (data.Level)
+				{
+					case LogLevel.Fatal:
+					case LogLevel.Error:
+						_logger.Log(MikanLogLevel.Error, data.Message);
+						break;
+					case LogLevel.Warn:
+						_logger.Log(MikanLogLevel.Warning, data.Message);
+						break;
+					case LogLevel.Info:
+						_logger.Log(MikanLogLevel.Info, data.Message);
+						break;
+					case LogLevel.Debug:
+						_logger.Log(MikanLogLevel.Debug, data.Message);
+						break;
+					case LogLevel.Trace:
+						_logger.Log(MikanLogLevel.Trace, data.Message);
+						break;
+				}
+			};
 
 			_wsConnection.OnOpen += EnqueueWebsocketConnectEvent;
 			_wsConnection.OnMessage += EnqueueWebsocketMessageEvent;
@@ -180,8 +195,8 @@ namespace MikanXR
 				string message = e.Data;
 				var root = (JObject)JsonConvert.DeserializeObject(message);
 
-				if (root.TryGetValue("eventType", out JToken eventTypeElement) &&
-					eventTypeElement.Type == JTokenType.String)
+				if (root.TryGetValue("eventTypeId", out JToken eventTypeElement) &&
+					eventTypeElement.Type == JTokenType.Integer)
 				{
 					lock (_websocketThreadEventQueue)
 					{
@@ -192,8 +207,8 @@ namespace MikanXR
 						});
 					}
 				}
-				else if (root.TryGetValue("responseType", out JToken responseTypeElement) &&
-						responseTypeElement.Type == JTokenType.String)
+				else if (root.TryGetValue("responseTypeId", out JToken responseTypeElement) &&
+						responseTypeElement.Type == JTokenType.Integer)
 				{
 					if (_textResponseHandler != null)
 					{

@@ -1,8 +1,7 @@
-﻿using MikanXR;
-using Warudo.Core.Attributes;
+﻿using Warudo.Core.Attributes;
 using Warudo.Core.Graphs;
 
-namespace Warudo.Plugins.MikanPlugin.Nodes {
+namespace MikanXR.Nodes {
     [NodeType(Id = "09de12d3-877c-4af9-a7b8-eef319488a8d", Title = "ON_MIKAN_CONNECTED_EVENT", Category = "MIKAN")]
     public class OnMikanConnectedNode : MikanEventNode {
         

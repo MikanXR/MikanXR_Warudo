@@ -9,6 +9,7 @@ namespace MikanXR
 {
 	public class MikanRenderTargetAPI
 	{
+		private MikanSettings _boundSettings;
 		private MikanRequestManager _requestManager;
 		private MikanCoreAPI _coreAPI;
 		private MikanLogger _logger;
@@ -33,7 +34,7 @@ namespace MikanXR
 			_logger= _coreAPI.Logger;
 		}
 
-		public MikanAPIResult Initialize()
+		public MikanAPIResult Initialize(MikanSettings settings)
 		{
 			// Use reflection to fetch the KlakSpout API
 			if (!FetchSpoutAPI())
@@ -53,7 +54,34 @@ namespace MikanXR
 			_depthPackMaterial = new Material(_rgbDepthPackShader);
 			_depthPackMaterial.hideFlags = HideFlags.HideAndDontSave;
 
+			// Bind settings events
+			BindSettingsEvents(settings);
+
 			return MikanAPIResult.Success;
+		}
+
+		private void BindSettingsEvents(MikanSettings settings)
+		{
+			UnbindSettingsEvents();
+
+			settings.OnSceneScaleChanged.AddListener(HandleSceneScaleChanged);
+			_boundSettings = settings;
+
+			HandleSceneScaleChanged(settings.SceneScale);
+		}
+
+		private void UnbindSettingsEvents()
+		{
+			if (_boundSettings != null)
+			{
+				_boundSettings.OnSceneScaleChanged.RemoveListener(HandleSceneScaleChanged);
+				_boundSettings= null;
+			}
+		}
+
+		private void HandleSceneScaleChanged(float newScale)
+		{
+			_depthPackMaterial.SetFloat("_SceneScale", newScale);
 		}
 
 		public void Shutdown()
@@ -69,7 +97,7 @@ namespace MikanXR
 
 		public RenderTexture GetColorRenderTexture()
 		{
-			return _packDepthRenderTexture;
+			return _colorRenderTexture;
 		}
 
 		public RenderTexture GetPackDepthRenderTexture()
