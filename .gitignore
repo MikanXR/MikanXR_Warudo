@@ -76,3 +76,9 @@ crashlytics-build.properties
 
 # Mod build output
 /Mod/
+
+# The MikanXR runtime and shaders, synced from the Unity package by SyncMikanRuntime.bat
+/Assets/MikanXR/Runtime/
+/Assets/MikanXR/Runtime.meta
+/Assets/MikanXR/Shaders/
+/Assets/MikanXR/Shaders.meta

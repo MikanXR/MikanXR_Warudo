@@ -15,11 +15,11 @@ MonoBehaviour:
   activeProfile: 0
   exportProfiles:
   - referencePaths: []
-    modName: MikanXRSpike
+    modName: MikanXR
     modAuthor: MikanXR
-    modVersion: 0.0.1
-    modDescription: KlakSpout feasibility spike
-    modAssetPath: D:/Github/git-BrendanWalker/MikanXR_Warudo/Assets/MikanXRSpike
+    modVersion: 0.1.0
+    modDescription: Mirrors a MikanXR editor into Warudo and composites the character into its calibrated cameras
+    modAssetPath: D:/Github/git-BrendanWalker/MikanXR_Warudo/Assets/MikanXR
     modExportPath: D:/Github/git-BrendanWalker/MikanXR_Warudo/Mod
     modIcon: {fileID: 0}
   logLevel: 4
