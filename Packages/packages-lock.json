@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "app.warudo.modtool": {
-      "version": "https://github.com/HakuyaLabs/Warudo-Mod-Tool.git#0.14.3.10",
+      "version": "https://github.com/HakuyaLabs/Warudo-Mod-Tool.git#upm/latest",
       "depth": 0,
       "source": "git",
       "dependencies": {
@@ -13,11 +13,11 @@
         "com.unity.render-pipelines.universal": "12.1.15",
         "com.unity.services.analytics": "6.0.2"
       },
-      "hash": "812a9e992e01f92eb6403b8c1a6a444967a93f04"
+      "hash": "e5038890371487ea9a144b5ea759c8dbfd17e84a"
     },
     "com.unity.burst": {
       "version": "1.8.18",
-      "depth": 0,
+      "depth": 2,
       "source": "registry",
       "dependencies": {
         "com.unity.mathematics": "1.2.1",
@@ -27,7 +27,7 @@
     },
     "com.unity.cinemachine": {
       "version": "2.10.1",
-      "depth": 0,
+      "depth": 1,
       "source": "registry",
       "dependencies": {
         "com.unity.test-framework": "1.1.31"
@@ -39,17 +39,6 @@
       "depth": 0,
       "source": "registry",
       "dependencies": {},
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.collections": {
-      "version": "1.4.0",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.burst": "1.6.6",
-        "com.unity.test-framework": "1.1.31",
-        "com.unity.nuget.mono-cecil": "1.11.4"
-      },
       "url": "https://packages.unity.com"
     },
     "com.unity.editorcoroutines": {
@@ -116,21 +105,14 @@
     },
     "com.unity.mathematics": {
       "version": "1.2.6",
-      "depth": 1,
-      "source": "registry",
-      "dependencies": {},
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.nuget.mono-cecil": {
-      "version": "1.11.4",
-      "depth": 1,
+      "depth": 2,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
     "com.unity.nuget.newtonsoft-json": {
       "version": "3.2.1",
-      "depth": 0,
+      "depth": 1,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
@@ -144,7 +126,7 @@
     },
     "com.unity.postprocessing": {
       "version": "3.4.0",
-      "depth": 0,
+      "depth": 1,
       "source": "registry",
       "dependencies": {
         "com.unity.modules.physics": "1.0.0"

@@ -3,24 +3,14 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags:
-  - GizmosCamera
-  - DefaultReflectionProbe
-  - ContactCollider
-  - WarudoCamera
-  - SwitcherCamera
+  tags: []
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - PostProcessing
+  - 
   - Water
   - UI
-  - Character
-  - Prop
-  - Environment
-  - CollidableProp
-  - ContactCollider
   - 
   - 
   - 
@@ -30,18 +20,23 @@ TagManager:
   - 
   - 
   - 
-  - RuntimeSceneGizmos
   - 
   - 
   - 
-  - Camera1
-  - Camera2
-  - Camera3
-  - Camera4
-  - Camera5
-  - Camera6
-  - Camera7
-  - Camera8
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
   m_SortingLayers:
   - name: Default
     uniqueID: 0
