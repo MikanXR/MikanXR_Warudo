@@ -1,9 +1,11 @@
+using System.Collections.Generic;
 using MikanXR.Unity;
 using UnityEngine;
 using Warudo.Core;
 using Warudo.Core.Attributes;
 using Warudo.Core.Rendering;
 using Warudo.Plugins.Core.Assets;
+using Warudo.Plugins.Core.Assets.Environment;
 
 namespace MikanXR.Warudo
 {
@@ -136,12 +138,18 @@ namespace MikanXR.Warudo
 		[FloatSlider(0f, 4f)]
 		public float LightIntensityScale = 1f;
 
+		[DataInput]
+		[Label("Hide Warudo Directional Lights")]
+		[Description("Keep Warudo's own directional lights out of the Mikan cameras, so the editor's captured key light is the only sun on the character there. Warudo's own view keeps them.")]
+		public bool HideWarudoDirectionalLights = false;
+
 		public MikanClient Client { get; private set; }
 		public MikanSceneAnnouncer SceneAnnouncer { get; private set; }
 		public bool IsClientConnected => Client != null && Client.IsClientInitialized;
 
 		private bool _clientWanted;
 		private float _nextStatusTime;
+		private readonly List<Light> _hiddenLights = new List<Light>();
 
 		protected override GameObject CreateGameObject()
 		{
@@ -241,6 +249,8 @@ namespace MikanXR.Warudo
 			Client.SetRenderCullingMask(ComputeCullingMask());
 			Client.Connected += OnClientConnected;
 			Client.Disconnected += OnClientDisconnected;
+			Client.CameraRenderStarting += OnCameraRenderStarting;
+			Client.CameraRenderFinished += OnCameraRenderFinished;
 
 			SceneAnnouncer = GameObject.AddComponent<MikanSceneAnnouncer>();
 			SceneAnnouncer.SceneAnnounced += OnSceneAnnounced;
@@ -260,6 +270,8 @@ namespace MikanXR.Warudo
 
 			Client.Connected -= OnClientConnected;
 			Client.Disconnected -= OnClientDisconnected;
+			Client.CameraRenderStarting -= OnCameraRenderStarting;
+			Client.CameraRenderFinished -= OnCameraRenderFinished;
 			if (SceneAnnouncer != null)
 			{
 				SceneAnnouncer.SceneAnnounced -= OnSceneAnnounced;
@@ -337,6 +349,45 @@ namespace MikanXR.Warudo
 				mask |= 1 << k_layerScreen;
 			}
 			return mask;
+		}
+
+		// Warudo's directional lights go dark for a Mikan camera's renders and come back right
+		// after, within the frame, so Warudo's own view never sees the change
+		private void OnCameraRenderStarting(MikanCameraObject camera)
+		{
+			if (!HideWarudoDirectionalLights || Context.OpenedScene == null)
+			{
+				return;
+			}
+
+			foreach (DirectionalLightAsset lightAsset in Context.OpenedScene.GetAssets<DirectionalLightAsset>())
+			{
+				if (lightAsset.GameObject == null)
+				{
+					continue;
+				}
+
+				foreach (Light light in lightAsset.GameObject.GetComponentsInChildren<Light>())
+				{
+					if (light.enabled)
+					{
+						light.enabled = false;
+						_hiddenLights.Add(light);
+					}
+				}
+			}
+		}
+
+		private void OnCameraRenderFinished(MikanCameraObject camera)
+		{
+			foreach (Light light in _hiddenLights)
+			{
+				if (light != null)
+				{
+					light.enabled = true;
+				}
+			}
+			_hiddenLights.Clear();
 		}
 
 		private void OnClientConnected()

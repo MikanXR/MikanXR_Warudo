@@ -49,9 +49,11 @@ Add the **MikanXR** asset to a Warudo scene. It connects to the editor on this m
 - **World Scale:** Warudo units per Mikan meter, 10 by default, since Warudo characters are human sized and the editor's scenes are tabletop sized
 - **Rendering:** stencil knockouts, shadows on the stencils, the depth buffer, the shadow strength, and which of Warudo's content the Mikan cameras render (characters, props, environment, screens). Warudo's UI, gizmos and per-camera layers never render.
 - **Helpers:** the camera frustums, stencil previews and light cones in Warudo's own view
-- **Lighting:** whether the editor's light environment and DMX spot lights light the scene, and their intensity
+- **Lighting:** whether the editor's light environment and DMX spot lights light the scene, their intensity, and whether Warudo's own directional lights are hidden from the Mikan cameras
 
 To place a stage, add a **MikanXR Stage Anchor** asset and pick the stage from the editor's stages. While the anchor exists, the stage sits where the anchor is and follows its gizmo, and the editor's own transform for that stage is ignored. Removing the anchor hands the stage back to the editor.
+
+A Mikan camera's renders are lit by the light environment captured through that camera, as the scene's ambient and a key light, while Warudo's own view keeps Warudo's lighting. A camera without a capture renders under Warudo's lighting alone. Warudo's directional light still lights the character beside the captured key light, so with a capture in place turn on Hide Warudo Directional Lights to leave the key light as the only sun in the Mikan renders.
 
 In the editor, the compositor that should carry Warudo's character uses `unity_client_shadow_graph.compgraph` with a client texture source named `Warudo`, the client id.
 
