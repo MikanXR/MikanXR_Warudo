@@ -73,3 +73,6 @@ crashlytics-build.properties
 
 # Host assemblies copied from the Warudo install by CopyHostAssemblies.bat
 /Assets/HostAssemblies/*.dll
+
+# Mod build output
+/Mod/
