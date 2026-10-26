@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "app.warudo.modtool": {
-      "version": "https://github.com/HakuyaLabs/Warudo-Mod-Tool.git#upm/latest",
+      "version": "https://github.com/HakuyaLabs/Warudo-Mod-Tool.git#ed8d637b5ba163e9b2de8e4004c82b0151a1459f",
       "depth": 0,
       "source": "git",
       "dependencies": {
@@ -13,7 +13,7 @@
         "com.unity.render-pipelines.universal": "12.1.15",
         "com.unity.services.analytics": "6.0.2"
       },
-      "hash": "e5038890371487ea9a144b5ea759c8dbfd17e84a"
+      "hash": "ed8d637b5ba163e9b2de8e4004c82b0151a1459f"
     },
     "com.unity.burst": {
       "version": "1.8.18",
