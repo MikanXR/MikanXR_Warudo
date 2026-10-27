@@ -87,7 +87,7 @@ Members are found on the type and its bases, public and private, fields and prop
 - `type members <Type> [filter]` lists a type's members with its base type
 - `type instances <Type>` lists the live objects of a Unity object type
 
-A type is named by its full name or by a simple name unique across the loaded assemblies. A setting on a Warudo entity is better changed through `warudo`, which runs the entity's watchers, than through `obj set`, which writes the field behind Warudo's back.
+A type is named by its full name or by a simple name unique across the loaded assemblies. Hot reload leaves a mod's or a Playground script's earlier assemblies loaded, so copies of one type resolve to the newest. A setting on a Warudo entity is better changed through `warudo`, which runs the entity's watchers, than through `obj set`, which writes the field behind Warudo's back.
 
 Value syntax for set and call arguments:
 

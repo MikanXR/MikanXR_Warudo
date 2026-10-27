@@ -77,6 +77,13 @@ namespace WarudoAutomation
 					type = matches[0];
 					return true;
 				}
+				// A hot reloaded mod or Playground script leaves its earlier assemblies loaded, so
+				// copies of one type resolve to the newest, which comes last in load order
+				if (matches.Count > 1 && matches.All(t => t.FullName == matches[0].FullName))
+				{
+					type = matches[matches.Count - 1];
+					return true;
+				}
 				if (matches.Count > 1)
 				{
 					error = $"type '{name}' is ambiguous: " +
