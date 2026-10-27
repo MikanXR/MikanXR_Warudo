@@ -1,12 +1,14 @@
 using MikanXR.Unity;
 using UMod;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace MikanXR.Warudo
 {
 	// The package's shaders as the mod carries them: SyncMikanRuntime copies them into the mod
 	// folder, and the mod loads them by their project path. A shader name "MikanXR/Foo" is the
-	// asset Shaders/MikanFoo.shader.
+	// asset Shaders/MikanFoo.shader. While Warudo runs URP, a shader the mod has a URP form of,
+	// ShadersURP/MikanFooURP.shader, loads in its place.
 	//
 	// Other package assets are not shipped. The Spout resources are a ScriptableObject, which a
 	// mod cannot carry, so the writer falls back to the copy Warudo itself has loaded.
@@ -14,6 +16,7 @@ namespace MikanXR.Warudo
 	{
 		private const string k_shaderNamePrefix = "MikanXR/";
 		private const string k_shaderFolder = "Assets/MikanXR/Shaders/";
+		private const string k_urpShaderFolder = "Assets/MikanXR/ShadersURP/";
 
 		private readonly ModHost _modHost;
 
@@ -31,6 +34,15 @@ namespace MikanXR.Warudo
 
 			// The mod's assets load by project path, or by bare asset name
 			string assetName = "Mikan" + shaderName.Substring(k_shaderNamePrefix.Length);
+			if (GraphicsSettings.currentRenderPipeline != null)
+			{
+				Shader urpShader = _modHost.Assets.Load<Shader>(k_urpShaderFolder + assetName + "URP.shader");
+				if (urpShader != null)
+				{
+					return urpShader;
+				}
+			}
+
 			return _modHost.Assets.Load<Shader>(k_shaderFolder + assetName + ".shader")
 				?? _modHost.Assets.Load<Shader>(assetName);
 		}

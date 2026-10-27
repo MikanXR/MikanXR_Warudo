@@ -14,7 +14,7 @@ namespace MikanXR.Warudo
 	// scene. The client mirrors the editor's stages, anchors, stencils and cameras under it, and
 	// each Mikan camera renders Warudo's content and publishes it to the editor over Spout.
 	//
-	// The client needs the built-in render pipeline. In Warudo's URP mode it stays disconnected.
+	// In Warudo's URP mode the client renders through MikanUrpRenderPath.
 	[AssetType(
 		Id = "6a1d3c58-2f4e-4b7a-9c61-0e8f5b2d7a43",
 		Title = "MikanXR",
@@ -150,6 +150,8 @@ namespace MikanXR.Warudo
 		private bool _clientWanted;
 		private float _nextStatusTime;
 		private readonly List<Light> _hiddenLights = new List<Light>();
+		private RenderingPipeline _clientPipeline;
+		private MikanUrpRenderPath _urpRenderPath;
 
 		protected override GameObject CreateGameObject()
 		{
@@ -219,16 +221,31 @@ namespace MikanXR.Warudo
 			settings.applyRootTransform = false;
 		}
 
+		// The client is built for the pipeline Warudo runs, so a switch restarts it: the cameras and
+		// the stencil materials come back for the new pipeline. The new client starts on a later
+		// update, once Unity has destroyed the old one.
 		private void UpdateClientForPipeline()
 		{
-			if (Context.RenderingPipelineManager.CurrentPipeline == RenderingPipeline.BiRP)
+			RenderingPipeline pipeline = Context.RenderingPipelineManager.CurrentPipeline;
+			if (Client != null)
 			{
-				StartClient();
+				if (pipeline != _clientPipeline)
+				{
+					StopClient();
+					_clientWanted = true;
+					RefreshStatus();
+				}
+				return;
 			}
-			else
+
+			if (GameObject != null && GameObject.GetComponent<MikanClient>() != null)
 			{
-				StopClient();
+				_clientWanted = true;
+				return;
 			}
+
+			_clientPipeline = pipeline;
+			StartClient();
 			RefreshStatus();
 		}
 
@@ -247,6 +264,11 @@ namespace MikanXR.Warudo
 			Client.SettingsProvider = new MikanWarudoSettingsProvider(this);
 			Client.SetClientName(ClientName);
 			Client.SetRenderCullingMask(ComputeCullingMask());
+			if (_clientPipeline == RenderingPipeline.URP)
+			{
+				_urpRenderPath = new MikanUrpRenderPath();
+				Client.SetRenderPath(_urpRenderPath);
+			}
 			Client.Connected += OnClientConnected;
 			Client.Disconnected += OnClientDisconnected;
 			Client.CameraRenderStarting += OnCameraRenderStarting;
@@ -279,6 +301,8 @@ namespace MikanXR.Warudo
 			}
 
 			Object.Destroy(Client);
+			_urpRenderPath?.Dispose();
+			_urpRenderPath = null;
 
 			// What the client mirrored and its Spout senders live under the root
 			if (GameObject != null)
@@ -411,11 +435,7 @@ namespace MikanXR.Warudo
 		private void RefreshStatus()
 		{
 			string status;
-			if (Context.RenderingPipelineManager.CurrentPipeline != RenderingPipeline.BiRP)
-			{
-				status = "MikanXR needs Warudo's built-in render pipeline. It stays disconnected in URP mode.";
-			}
-			else if (Client == null)
+			if (Client == null)
 			{
 				status = "Starting";
 			}

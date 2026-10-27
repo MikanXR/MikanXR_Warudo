@@ -65,7 +65,13 @@ Blueprint nodes, under MikanXR:
 
 To move the character per scene, wire On MikanXR Scene Changed into a node that branches on the scene name and loads that scene's character position.
 
-The client needs Warudo's built-in render pipeline. In Warudo's URP mode the asset stays disconnected and says so.
+The client works in both of Warudo's render pipelines. Switching the pipeline restarts it, so its cameras and stencil materials come back for the new one. In URP mode:
+
+- The Mikan cameras render from inside URP's own render loop, through `UniversalRenderPipeline.RenderSingleCamera`, since `Camera.Render` draws nothing there.
+- The stencils catch the shadow of the main light only, which during a Mikan render is the captured key light when there is one. The shadow distance and cascades are Warudo's URP settings.
+- The depth buffer comes from URP's depth texture. Warudo's SSAO makes URP fill that in a depth prepass, so it holds the materials that have a depth pass, and not the stencils.
+- A character loaded before the switch keeps materials built for the built-in pipeline, which URP does not draw, in Warudo's own view as well. Load the character again after switching.
+- The URP form of the shadow catcher lives in `Assets/MikanXR/ShadersURP`. Its pass carries no LightMode tag: the mod project builds under the built-in pipeline, whose shader stripping removes every pass tagged for a scriptable pipeline.
 
 ## Automation
 
