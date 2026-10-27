@@ -33,7 +33,7 @@ The mod tool is pinned in `Packages/manifest.json` to a commit on the `upm/lates
 "C:\Program Files\Unity\Hub\Editor\2021.3.45f2\Editor\Unity.exe" -projectPath . -executeMethod ModBatchBuild.Build -logFile build.log
 ```
 
-This writes `Mod\MikanXR.warudo` and exits with code 0, or 1 when the file was not written. Run it without `-batchmode` and with the project closed in any other editor. The mod tools log "Build Result: Success" even when writing the file throws, so the exit code checks for the file instead.
+This writes `Mod\MikanXR.warudo` and exits with code 0, or 1 when the file was not written. The export profile in `Assets/ExportSettings.asset` names its folders relative to the project (`Assets/MikanXR` and `Mod`), which the mod tools resolve against the project folder, so a checkout anywhere builds. Picking a folder in the profile's browse dialog writes an absolute path back, so trim it to the relative form before committing. Run it without `-batchmode` and with the project closed in any other editor. The mod tools log "Build Result: Success" even when writing the file throws, so the exit code checks for the file instead.
 
 If the build fails with "the mod tools settings are not present", the `Library` folder's asset search index is stale. The zip's prebuilt `Library` had this, and swapping the mod tool package in place can cause it. Delete `Library` and let the project reimport.
 
