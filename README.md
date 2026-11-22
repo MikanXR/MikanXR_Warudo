@@ -12,6 +12,7 @@ The mod compiles the [MikanXR Unity package](https://github.com/MikanXR/MikanXR_
 - `Assets/HostAssemblies/`: Warudo assemblies the mod compiles against but does not ship, copied by `CopyHostAssemblies.bat` (gitignored). The mod references `Klak.Spout.Runtime` at compile time and binds to the copy Warudo already loads.
 - `Assets/Editor/ModBatchBuild.cs`: the command line entry point for Warudo > Build Mod
 - `Assets/ExportSettings.asset`: the export profile (mod folder `Assets/MikanXR`, output folder `Mod/`)
+- `Tools/package_release.py`: packages the built mod as the release zip (see Releasing)
 - `Tools/Automation/`: the Warudo automation channel, a development tool (see below)
 
 ## Setup
@@ -40,6 +41,16 @@ If the build fails with "the mod tools settings are not present", the `Library` 
 ## Installing
 
 Copy `Mod\MikanXR.warudo` into `Warudo_Data\StreamingAssets\Plugins` under the Warudo install. A running Warudo reloads a plugin when its file is replaced, and keeps the MikanXR assets already in the scene.
+
+## Releasing
+
+A release is one zip, `MikanXR_Warudo_<version>.zip`, attached to the GitHub release tagged `v<version>`. It holds `MikanXR.warudo` and a `plugin.json` at its root, the manifest the [MikanXR launcher](https://github.com/MikanXR/MikanLauncher) reads to install the mod into Warudo. The mod is built on a development machine, since the build needs the Unity editor and Warudo's own assemblies, so there is no build workflow and the release is published from the checkout:
+
+1. Set `Version` in `Assets/MikanXR/Plugin/MikanXRPlugin.cs`, sync the runtime if the Unity package changed, and build the mod.
+2. Run `python Tools\package_release.py`. It writes the zip to `Build\` and refuses a mod file whose compiled version differs from the source's, or that is older than a file under `Assets/MikanXR`.
+3. Commit, then tag that commit `v<version>` and push both. The tag must match the version compiled into the mod, which the script reads back out of the mod file.
+4. Run `python Tools\package_release.py --publish`. It checks that the working tree is clean and that the tag is on the checked out commit and on origin, then drafts the release with the zip attached through `gh`.
+5. Read the draft on the releases page and publish it.
 
 ## Using
 
